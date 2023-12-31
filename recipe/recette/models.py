@@ -7,4 +7,4 @@ class Recette(models.Model):
     temps_preparation = models.IntegerField()
     temps_cuisson = models.IntegerField()
     personnes = models.IntegerField()
-    image = models.ImageField(upload_to='images/')
+    image = models.CharField(max_length=100)

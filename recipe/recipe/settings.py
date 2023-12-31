@@ -26,7 +26,8 @@ SECRET_KEY = 'django-insecure-+b61in26dfu$_ac2w+78rw1b8x-fwq5dq1b#74q#h0+u3ji$4g
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+CORS_ALLOW_ALL_ORIGINS = True
 
 
 # Application definition
@@ -46,8 +47,7 @@ INSTALLED_APPS = [
     'commentaires',
     'etapes',
     'rest_framework',
-
-
+    'corsheaders'
 
 ]
 
@@ -59,6 +59,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = 'recipe.urls'
@@ -133,8 +135,8 @@ IMAGE_URL = "https://www.hervecuisine.com/wp-content/uploads/2017/02/recette-du-
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR,'static')
 ]
-MEDIA_ROOT = BASE_DIR / 'static/base/images'
-MEDIA_URL = '/images/'
+# MEDIA_ROOT = BASE_DIR / 'static/base/images'
+MEDIA_URL = ''
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
