@@ -39,7 +39,7 @@ def login_view(request):
             return Response({'error': 'Invalid credentials'}, status=401)
     return Response({'error': 'Invalid request method'}, status=400)
 
-
+#ok
 
 @api_view(['POST'])
 def logout_view(request):
