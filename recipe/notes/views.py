@@ -1,39 +1,28 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from recette.models import Recette
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
 from .forms import NoteForm
 from .models import Note
+from recette.models import Recette
+from .serializer import NoteSerializer  # Ajouter cette ligne si besoin
 
-@login_required
-def ajouter_note(request, pk):
-    # Récupérer la recette spécifique avec l'ID (pk)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ajouter_note_api(request, pk):
     recette = get_object_or_404(Recette, pk=pk)
 
     if request.method == 'POST':
-        # Créer une instance de NoteForm avec les données de la requête POST
-        form = NoteForm(request.POST)
+        form = NoteForm(request.data)
 
-        # Vérifier si le formulaire est valide
         if form.is_valid():
-            # Créer une instance de Note sans l'enregistrer dans la base de données
             note = form.save(commit=False)
-
-            # Assigner la recette et l'utilisateur à la note
             note.recette = recette
             note.user = request.user
-
-            # Enregistrer la note dans la base de données
             note.save()
 
-            # Rediriger vers la page de détails de la recette
-            return redirect('detail_recette', pk=recette.pk)
-    else:
-        # Créer une instance de NoteForm vide
-        form = NoteForm()
-
-    context = {
-        'recette': recette,
-        'form': form,
-    }
-
-    return render(request, 'ajouter_note.html', context)
+            serializer = NoteSerializer(note)  # Utiliser le serializer pour renvoyer les données de la note ajoutée
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    return Response({'error': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)

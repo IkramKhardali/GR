@@ -1,16 +1,14 @@
 from django.urls import path
 from . import views
-from .views import ajouter_commentaire
 
 urlpatterns = [
     # Autres URLs de l'application
-    path('recette/<int:pk>/', views.detail_recette, name='detail_recette'),
-    path('<int:pk>/ajouter_commentaire/', ajouter_commentaire, name='ajouter_commentaire'),
-    path('commentaire/<int:pk>/dislike', views.ajouter_dislike, name='ajouter_dislike'),
-    path('commentaire/<int:pk>/like', views.ajouter_like, name='ajouter_like'),
-    path('', views.recette_list, name='liste_recettes'),
-    path('<int:pk>/supprimer/', views.supprimer_recette, name='suppression_recette'),
-    path('creer', views.creer_recette, name='creer_recette'),
-
-
+    path('api/recette/<int:pk>/', views.DetailRecetteAPIView.as_view(), name='detail-recette-api'),
+    #path('api/recette/<int:pk>/ajouter_commentaire/', views.AjouterCommentaireAPIView.as_view(), name='ajouter-commentaire-api'),
+    path('api/recette/<int:pk>/ajouter_note/', views.AjouterNoteAPIView.as_view(), name='ajouter-note-api'),
+    path('api/commentaire/<int:pk>/ajouter_like/', views.AjouterLikeAPIView.as_view(), name='ajouter-like-api'),
+    path('api/commentaire/<int:pk>/ajouter_dislike/', views.AjouterDislikeAPIView.as_view(), name='ajouter-dislike-api'),
+    path('api/recettes/', views.RecetteListAPIView.as_view(), name='recette-list-api'),
+    path('api/recette/creer/', views.CreerRecetteAPIView.as_view(), name='creer-recette-api'),
+    path('api/recette/<int:pk>/supprimer/', views.SupprimerRecetteAPIView.as_view(), name='supprimer-recette-api'),
 ]

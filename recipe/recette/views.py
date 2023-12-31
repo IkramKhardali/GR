@@ -11,111 +11,97 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from .forms import RecetteForm
 from django.core.paginator import Paginator
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Recette
+from .serializer import RecetteSerializer
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
+from django.db.models import Avg
 
-@login_required
-def ajouter_commentaire(request, pk):
-    recette = get_object_or_404(Recette, pk=pk)
-    if request.method == 'POST':
-        form = CommentaireForm(request.POST)
-        if form.is_valid():
-            commentaire = form.save(commit=False)
-            commentaire.user = request.user
-            commentaire.recette = recette
-            commentaire.save()
-            messages.success(request, 'Commentaire ajouté avec succès')
-            return redirect('detail_recette', pk=pk)
-    else:
-        form = CommentaireForm()
-    return render(request, 'ajouter_commentaire.html', {'form': form})
+class DetailRecetteAPIView(APIView):
+    def get(self, request, pk):
+        recette = get_object_or_404(Recette, pk=pk)
+        serializer = RecetteSerializer(recette)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-@login_required
-def ajouter_note(request, pk):
-    recette = get_object_or_404(Recette, pk=pk)
-    if request.method == 'POST':
-        form = NoteForm(request.POST)
-        if form.is_valid():
-            note = form.save(commit=False)
-            note.recette = recette
-            note.user = request.user
-            note.save()
-            return redirect('detail_recette', pk=pk)
-    else:
-        form = NoteForm()
-    context = {'form': form}
-    return render(request, 'ajouter_note.html', context)
+# class AjouterCommentaireAPIView(APIView):
+#     def post(self, request, pk):
+#         recette = get_object_or_404(Recette, pk=pk)
+#         contenu = request.data.get('contenu')  # Assurez-vous que le contenu est fourni dans les données POST
+#         if contenu:
+#             commentaire = Commentaire.objects.create(recette=recette, contenu=contenu)
+#             return Response({'success': 'Commentaire ajouté avec succès'}, status=status.HTTP_201_CREATED)
+#         return Response({'error': 'Le contenu du commentaire est requis'}, status=status.HTTP_400_BAD_REQUEST)
 
-def detail_recette(request, pk):
-    recette = get_object_or_404(Recette, pk=pk)
-    etapes = Etape.objects.filter(recette=recette).order_by('ordre')
-    note_moyenne = Note.objects.filter(recette=recette).aggregate(models.Avg('valeur'))['valeur__avg']
-    commentaires = Commentaire.objects.filter(recette=recette).order_by('-date')
+class AjouterNoteAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    if request.method == 'POST':
-        form = NoteForm(request.POST)
+    def post(self, request, pk):
+        recette = get_object_or_404(Recette, pk=pk)
+        form = NoteForm(request.data)
+        
         if form.is_valid():
             note = form.save(commit=False)
             note.recette = recette
-            note.user = request.user
+            note.user = request.user  # Assurez-vous que la note est associée à l'utilisateur authentifié
             note.save()
-            return redirect('detail_recette', pk=pk)
-    else:
-        form = NoteForm()
+            return Response({'success': 'Note ajoutée avec succès'}, status=status.HTTP_201_CREATED)
+        
+        return Response({'error': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
 
-    commentaire_form = CommentaireForm()
+# class DetailRecetteAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
 
-    context = {
-        'recette': recette,
-        'etapes': etapes,
-        'note_moyenne': note_moyenne,
-        'commentaires': commentaires,
-        'form': form,
-        'commentaire_form': commentaire_form,
-    }
+#     def get(self, request, pk):
+#         recette = get_object_or_404(Recette, pk=pk)
+#         etapes = Etape.objects.filter(recette=recette).order_by('ordre')
+#         note_moyenne = Note.objects.filter(recette=recette).aggregate(Avg('valeur'))['valeur__avg']
 
-    return render(request, 'detail_recette.html', context)
-@login_required
-def ajouter_like(request, pk):
-    commentaire = get_object_or_404(Commentaire, pk=pk)
-    commentaire.likes += 1
-    commentaire.save()
-    messages.success(request, "Le commentaire a été liké avec succès.")
-    return redirect('detail_recette', pk=commentaire.recette.pk)
-@login_required
-def ajouter_dislike(request, pk):
-    commentaire = get_object_or_404(Commentaire, pk=pk)
-    commentaire.dislikes += 1
-    commentaire.save()
-    messages.success(request, "Le commentaire a été disliké avec succès.")
-   
-    return redirect('detail_recette', pk=commentaire.recette.pk)
+#         context = {
+#             'recette': recette,
+#             'etapes': etapes,
+#             'note_moyenne': note_moyenne,
+#         }
 
-def recette_list(request):
-    recettes = Recette.objects.all()
-    p= Paginator(Recette.objects.all(),6)
-    page = request.GET.get('page')
-    recipe = p.get_page(page)
-    return render(request, 'recette_list.html', {'recettes': recettes,'recipe':recipe})
+#         return Response(context, status=status.HTTP_200_OK)
+class AjouterLikeAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def post(self, request, pk):
+        commentaire = get_object_or_404(Commentaire, pk=pk)
+        commentaire.likes += 1
+        commentaire.save()
+        return Response({'success': 'Le commentaire a été liké avec succès'}, status=status.HTTP_200_OK)
 
+class AjouterDislikeAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
-def creer_recette(request):
-    if request.method == 'POST':
-        form = RecetteForm(request.POST, request.FILES)
-        if form.is_valid():
-            recette = form.save(commit=False)
-            recette.auteur = request.user
-            recette.save()
-            return redirect('detail_recette', pk=recette.pk)
-    else:
-        form = RecetteForm()
-    return render(request, 'creer_recette.html', {'form': form})
+    def post(self, request, pk):
+        commentaire = get_object_or_404(Commentaire, pk=pk)
+        commentaire.dislikes += 1
+        commentaire.save()
+        return Response({'success': 'Le commentaire a été disliké avec succès'}, status=status.HTTP_200_OK)
 
+class RecetteListAPIView(APIView):
+    def get(self, request):
+        recettes = Recette.objects.all()
+        serializer = RecetteSerializer(recettes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
+class CreerRecetteAPIView(APIView):
+    def post(self, request):
+        serializer = RecetteSerializer(data=request.data)
+        if serializer.is_valid():
+            recette = serializer.save(auteur=request.user)
+            return Response({'success': 'Recette créée avec succès', 'id': recette.id}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-def supprimer_recette(request, pk):
-    recette = get_object_or_404(Recette, pk=pk)
-    if request.user == recette.auteur:
-        recette.delete()
-        return redirect('liste_recettes')
-    else:
-        return redirect('detail_recette', pk=pk)    
+class SupprimerRecetteAPIView(APIView):
+    def delete(self, request, pk):
+        recette = get_object_or_404(Recette, pk=pk)
+        if request.user == recette.auteur:
+            recette.delete()
+            return Response({'success': 'Recette supprimée avec succès'}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'error': 'Vous n\'êtes pas autorisé à supprimer cette recette'}, status=status.HTTP_403_FORBIDDEN)

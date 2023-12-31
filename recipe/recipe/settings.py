@@ -45,7 +45,9 @@ INSTALLED_APPS = [
     'notes',
     'commentaires',
     'etapes',
-    'recipes',
+    'rest_framework',
+
+
 
 ]
 
